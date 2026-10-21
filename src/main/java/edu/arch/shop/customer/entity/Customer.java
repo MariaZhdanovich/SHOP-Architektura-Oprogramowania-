@@ -21,4 +21,10 @@ public class Customer {
 
     @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(length = 150)
+    private String email;
+
+    @Column(length = 20)
+    private String phoneNumber;
 }

@@ -9,6 +9,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -39,6 +43,10 @@ public class Order {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal unitPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private OrderStatus status = OrderStatus.NEW; // domyślny status nowego zamówienia
 
     public Order(String customerName, String productName, Integer quantity, BigDecimal unitPrice) {
         this.customerName = customerName;

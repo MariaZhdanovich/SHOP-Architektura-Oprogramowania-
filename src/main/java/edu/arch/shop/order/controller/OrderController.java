@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import edu.arch.shop.order.entity.OrderStatus;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import java.net.URI;
 import java.util.List;
 
@@ -38,6 +42,13 @@ public class OrderController {
         return orderService.findById(id);
     }
 
+    @GetMapping("/customer/{customerId}")
+    public List<OrderResponse> findByCustomerId(
+            @PathVariable Long customerId
+    ) {
+        return orderService.findByCustomerId(customerId);
+    }
+
     @PostMapping
     public ResponseEntity<OrderResponse> create(@RequestBody OrderRequest request) {
         OrderResponse response = orderService.create(request);
@@ -47,6 +58,11 @@ public class OrderController {
     @PutMapping("/{id}")
     public OrderResponse update(@PathVariable Long id, @RequestBody OrderRequest request) {
         return orderService.update(id, request);
+    }
+
+    @PatchMapping("/{id}/status")
+    public OrderResponse updateStatus(@PathVariable Long id, @RequestParam OrderStatus status){
+        return orderService.updateStatus(id, status);
     }
 
     @DeleteMapping("/{id}")

@@ -6,6 +6,7 @@ public record OrderRequest(
         String customerName,
         String productName,
         Integer quantity,
-        BigDecimal unitPrice
+        BigDecimal unitPrice,
+        Long customerId
 ) {
 }

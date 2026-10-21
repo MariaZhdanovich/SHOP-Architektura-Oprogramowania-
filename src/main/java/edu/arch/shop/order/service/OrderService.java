@@ -12,14 +12,25 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.List;
 
+import edu.arch.shop.customer.entity.Customer;
+import edu.arch.shop.customer.repository.CustomerRepository;
+import edu.arch.shop.order.entity.OrderStatus;
+
+import edu.arch.shop.notification.dto.NotificationRequest;
+import edu.arch.shop.notification.service.NotificationService;
+
 @Service
 @Transactional(readOnly = true)
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final CustomerRepository customerRepository;
+    private final NotificationService notificationService;
 
-    public OrderService(OrderRepository orderRepository) {
+    public OrderService(OrderRepository orderRepository, CustomerRepository customerRepository, NotificationService notificationService) { // rozszerzenie konstruktora o repo customer i notification
         this.orderRepository = orderRepository;
+        this.customerRepository = customerRepository;
+        this.notificationService = notificationService;
     }
 
     public List<OrderResponse> findAll() {
@@ -32,6 +43,15 @@ public class OrderService {
         return toResponse(findOrder(id));
     }
 
+    public List<OrderResponse> findByCustomerId(Long customerId) {
+        findCustomer(customerId);
+
+        return orderRepository.findByCustomerId(customerId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public OrderResponse create(OrderRequest request) {
         validate(request);
@@ -41,7 +61,15 @@ public class OrderService {
                 request.quantity(),
                 request.unitPrice()
         );
-        return toResponse(orderRepository.save(order));
+        if(request.customerId() != null){ // przypisanie klienta do zamówienia
+            Customer customer = findCustomer(request.customerId());
+            order.setCustomer(customer);
+        }
+        Order savedOrder = orderRepository.save(order);
+        String message = "Produkt: " + savedOrder.getProductName() + ". Utworzono zamówienie numer " + savedOrder.getId() + " dla klienta " + savedOrder.getCustomerName();
+        notificationService.create(new NotificationRequest(message));
+
+        return toResponse(savedOrder);
     }
 
     @Transactional
@@ -52,6 +80,21 @@ public class OrderService {
         order.setProductName(request.productName());
         order.setQuantity(request.quantity());
         order.setUnitPrice(request.unitPrice());
+        if(request.customerId() != null){ // przypisanie zamówienia do nowego wskazanego klienta
+            Customer customer = findCustomer(request.customerId());
+            order.setCustomer(customer);
+        }
+        return toResponse(orderRepository.save(order));
+    }
+
+    @Transactional
+    public OrderResponse updateStatus(Long id, OrderStatus status){ // nowa metoda ustawia nowy status zamówienia
+        if(status == null){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order status is required");
+        }
+        Order order = findOrder(id);
+        order.setStatus(status);
+
         return toResponse(orderRepository.save(order));
     }
 
@@ -96,14 +139,20 @@ public class OrderService {
     private OrderResponse toResponse(Order order) {
         BigDecimal totalPrice = order.getUnitPrice()
                 .multiply(BigDecimal.valueOf(order.getQuantity()));
-
+        Long customerId = order.getCustomer() != null ? order.getCustomer().getId() : null;
         return new OrderResponse(
                 order.getId(),
                 order.getCustomerName(),
                 order.getProductName(),
                 order.getQuantity(),
                 order.getUnitPrice(),
-                totalPrice
+                totalPrice,
+                customerId,
+                order.getStatus()
         );
+    }
+
+    private Customer findCustomer(Long customerId){ // nowa metoda "Znajdź customera po ID"
+        return customerRepository.findById(customerId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
     }
 }

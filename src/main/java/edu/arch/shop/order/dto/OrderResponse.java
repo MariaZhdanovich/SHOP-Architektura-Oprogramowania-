@@ -1,13 +1,10 @@
-package edu.arch.shop.order.dto;
+package edu.arch.shop.order.repository;
 
-import java.math.BigDecimal;
+import edu.arch.shop.order.entity.Order;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public record OrderResponse(
-        Long id,
-        String customerName,
-        String productName,
-        Integer quantity,
-        BigDecimal unitPrice,
-        BigDecimal totalPrice
-) {
+import java.util.List;
+
+public interface OrderRepository extends JpaRepository<Order, Long> {
+    List<Order> findByCustomerId(Long customerId);
 }
